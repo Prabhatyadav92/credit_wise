@@ -1,83 +1,91 @@
-
-from flask import Flask, render_template, request
+import streamlit as st
 import joblib
 import numpy as np
 import os
 
-app = Flask(__name__)
-app.config["DEBUG"] = True
-
+st.title("💳 Credit Wise Loan Prediction")
 
 # ================= PATHS =================
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+MODEL_PATH = os.path.join(BASE_DIR, "model", "model.pkl")
+SCALER_PATH = os.path.join(BASE_DIR, "model", "scaler.pkl")
 
-MODEL_PATH = r"C:\Users\Administrator\OneDrive\Desktop\Credit_wise loan predictiion\model\model.pkl"
-SCALER_PATH = r"C:\Users\Administrator\OneDrive\Desktop\Credit_wise loan predictiion\model\scaler.pkl"
-
+# Load model + scaler
 model = joblib.load(MODEL_PATH)
 scaler = joblib.load(SCALER_PATH)
 
+st.write("Fill the details below to check loan approval:")
 
-# ================= ROUTES =================
-@app.route("/", methods=["GET", "POST"])
-def index():
-    prediction = None
+# ================= INPUT FIELDS =================
+Applicant_Income = st.number_input("Applicant Income", min_value=0.0)
+Coapplicant_Income = st.number_input("Coapplicant Income", min_value=0.0)
+Age = st.number_input("Age", min_value=18, max_value=100)
+Dependents = st.number_input("Number of Dependents", min_value=0, max_value=10)
+Credit_Score = st.number_input("Credit Score", min_value=300, max_value=900)
+Existing_Loans = st.number_input("Number of Existing Loans", min_value=0, max_value=10)
+DTI_Ratio = st.number_input("DTI Ratio (%)", min_value=0.0)
+Savings = st.number_input("Savings (₹)", min_value=0.0)
+Collateral_Value = st.number_input("Collateral Value", min_value=0.0)
+Loan_Amount = st.number_input("Loan Amount", min_value=0.0)
+Loan_Term = st.number_input("Loan Term (months)", min_value=1, max_value=360)
+Education_Level = st.selectbox("Education Level", ["0", "1"])  # same as your encoding
 
-    if request.method == "POST":
-        f = request.form
+Employment_Status = st.selectbox("Employment Status", ["Salaried", "Self-employed", "Unemployed"])
+Marital_Status_Single = st.selectbox("Marital Status", ["Married", "Single"])
+Loan_Purpose = st.selectbox("Loan Purpose", ["Car", "Education", "Home", "Personal"])
+Property_Area = st.selectbox("Property Area", ["Rural", "Semiurban", "Urban"])
+Employer_Category = st.selectbox("Employer Category", ["Government", "MNC", "Private", "Unemployed"])
+Gender_Male = st.selectbox("Gender", ["Female", "Male"])
 
-        # Categorical helpers
-        emp = f["Employment_Status"]
-        loan = f["Loan_Purpose"]
-        prop = f["Property_Area"]
-        emp_cat = f["Employer_Category"]
 
-        # ================= FEATURE ORDER (CRITICAL) =================
-        features = [
-            float(f["Applicant_Income"]),
-            float(f["Coapplicant_Income"]),
-            float(f["Age"]),
-            float(f["Dependents"]),
-            float(f["Credit_Score"]),
-            float(f["Existing_Loans"]),
-            float(f["DTI_Ratio"]),
-            float(f["Savings"]),
-            float(f["Collateral_Value"]),
-            float(f["Loan_Amount"]),
-            float(f["Loan_Term"]),
-            int(f["Education_Level"]),
+# ================= PREDICT BUTTON =================
+if st.button("Predict Loan Approval"):
+    
+    features = [
+        float(Applicant_Income),
+        float(Coapplicant_Income),
+        float(Age),
+        float(Dependents),
+        float(Credit_Score),
+        float(Existing_Loans),
+        float(DTI_Ratio),
+        float(Savings),
+        float(Collateral_Value),
+        float(Loan_Amount),
+        float(Loan_Term),
+        int(Education_Level),
 
-            1 if emp == "Salaried" else 0,
-            1 if emp == "Self-employed" else 0,
-            1 if emp == "Unemployed" else 0,
+        # Employment Status
+        1 if Employment_Status == "Salaried" else 0,
+        1 if Employment_Status == "Self-employed" else 0,
+        1 if Employment_Status == "Unemployed" else 0,
 
-            int(f["Marital_Status_Single"]),
+        1 if Marital_Status_Single == "Single" else 0,
 
-            1 if loan == "Car" else 0,
-            1 if loan == "Education" else 0,
-            1 if loan == "Home" else 0,
-            1 if loan == "Personal" else 0,
+        # Loan Purpose
+        1 if Loan_Purpose == "Car" else 0,
+        1 if Loan_Purpose == "Education" else 0,
+        1 if Loan_Purpose == "Home" else 0,
+        1 if Loan_Purpose == "Personal" else 0,
 
-            1 if prop == "Semiurban" else 0,
-            1 if prop == "Urban" else 0,
+        # Property Area
+        1 if Property_Area == "Semiurban" else 0,
+        1 if Property_Area == "Urban" else 0,
 
-            1 if emp_cat == "Government" else 0,
-            1 if emp_cat == "MNC" else 0,
-            1 if emp_cat == "Private" else 0,
-            1 if emp_cat == "Unemployed" else 0,
+        # Employer Category
+        1 if Employer_Category == "Government" else 0,
+        1 if Employer_Category == "MNC" else 0,
+        1 if Employer_Category == "Private" else 0,
+        1 if Employer_Category == "Unemployed" else 0,
 
-            int(f["Gender_Male"])
-        ]
+        1 if Gender_Male == "Male" else 0
+    ]
 
-        # Convert → scale → predict
-        X = np.array(features).reshape(1, -1)
-        X_scaled = scaler.transform(X)
-        result = model.predict(X_scaled)[0]
+    X = np.array(features).reshape(1, -1)
+    X_scaled = scaler.transform(X)
+    result = model.predict(X_scaled)[0]
 
-        prediction = "✅ Loan Approved" if result == 1 else "❌ Loan Rejected"
-
-    return render_template("index.html", prediction=prediction)
-
-# ================= MAIN =================
-if __name__ == "__main__":
-    app.run(debug=True)
-
+    if result == 1:
+        st.success("✅ Loan Approved")
+    else:
+        st.error("❌ Loan Rejected")
