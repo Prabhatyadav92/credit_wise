@@ -3,7 +3,7 @@ import joblib
 import numpy as np
 import os
 
-st.title("💳 jo bryan khaya wo bkl maregaa aaj paap lgega bsdk")
+st.title("💳 jo biryani khaya wo bkl maregaa aaj paap lgega bsdk")
 
 # ================= PATHS =================
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
