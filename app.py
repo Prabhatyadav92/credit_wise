@@ -128,4 +128,4 @@ if st.button("🔍 Predict Loan Approval", use_container_width=True):
 
 # ================= FOOTER =================
 st.divider()
-st.caption("© 2026 CreditWise | Built with Streamlit & Machine Learning")
+st.caption("© 2026 CreditWise | Built with Streamlit & Machine Learning| by Prabhat")
